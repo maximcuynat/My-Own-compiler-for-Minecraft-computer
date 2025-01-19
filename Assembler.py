@@ -89,9 +89,8 @@ class Assembler:
                 print(f"Formatted instruction: opcode={opcode}, reg_dest={reg_dest}, reg_a={reg_a}, reg_b={reg_b}")
 
             # Separate into two bytes, always filling to 8 bits
-            byte1 = binary_line[:8].zfill(8)  # Remplir avec des zéros au début si nécessaire
-            byte2 = binary_line[8:].zfill(8)  # Remplir avec des zéros au début si nécessaire
-
+            byte1 = binary_line[:8].zfill(8)  # Fill with zeros at the beginning if necessary
+            byte2 = binary_line[8:].zfill(8)  # Fill with zeros at the beginning if necessary
 
             # Add opcode and operands separated for each instruction
             formatted_line = f"{byte1} {byte2}"
@@ -107,3 +106,8 @@ class Assembler:
             txt_file.write("\n".join(binary_output))
 
         print(f"\nCompilation complete. Generated text file: {self.output_file}")
+
+# Main program
+if __name__ == "__main__":
+    asm = Assembler("own-asm-compiler-for-minecraft-computer/code.asm", "binary_code.txt")
+    asm.compile_assembly()
