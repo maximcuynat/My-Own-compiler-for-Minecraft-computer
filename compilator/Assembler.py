@@ -106,8 +106,3 @@ class Assembler:
             txt_file.write("\n".join(binary_output))
 
         print(f"\nCompilation complete. Generated text file: {self.output_file}")
-
-# Main program
-if __name__ == "__main__":
-    asm = Assembler("own-asm-compiler-for-minecraft-computer/code.asm", "binary_code.txt")
-    asm.compile_assembly()
