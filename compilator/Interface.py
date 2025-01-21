@@ -1,7 +1,6 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from compilator.Assembler import Assembler
-from compilator.UnAssembler import UnAssembler
+from compilator.Assembler import Assembler # Importer la classe Assembler
+from compilator.UnAssembler import UnAssembler # Importer la classe UnAssembler
 
 class CompilerInterface:
     def __init__(self, root):
@@ -12,9 +11,9 @@ class CompilerInterface:
         # Centrer l'interface
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        x = (screen_width / 2) - (1280 / 2)
-        y = (screen_height / 2) - (720 / 2)
-        self.root.geometry(f'1280x720+{int(x)}+{int(y)}')
+        x = (screen_width / 2) - (1300 / 2)
+        y = (screen_height / 2) - (800 / 2)
+        self.root.geometry(f'1300x800+{int(x)}+{int(y)}')
 
         # Cadre principal
         main_frame = tk.Frame(self.root, bg="#2b2b2b")
@@ -115,6 +114,19 @@ class CompilerInterface:
         )
         self.help_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
+        # Cadre pour les erreurs de compilation en bas
+        self.error_label = tk.Label(
+            right_frame, text="Erreurs de Compilation", font=("Arial", 12, "bold"),
+            bg="#3c3f41", fg="#ffffff"
+        )
+        self.error_label.pack(pady=10)
+
+        self.error_text = tk.Text(
+            right_frame, height=5, bg="#2b2b2b", font=("Courier", 10),
+            fg="#ffffff", wrap=tk.WORD, insertbackground="#ffffff", state=tk.DISABLED
+        )
+        self.error_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
     def load_instruction_set(self):
         """Charge l'instruction set dans la section droite."""
         instruction_set = {
@@ -185,9 +197,17 @@ class CompilerInterface:
             # Afficher le code binaire dans le champ de texte
             self.unassembler_entry.insert("1.0", binary_code)
 
-            #messagebox.showinfo("Succès", "Code compilé avec succès !")
+            # Réinitialiser le champ d'erreur
+            self.error_text.config(state=tk.NORMAL)
+            self.error_text.delete("1.0", tk.END)
+            self.error_text.config(state=tk.DISABLED)
+
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de la compilation : {str(e)}")
+            # Afficher l'erreur dans le champ d'erreur
+            self.error_text.config(state=tk.NORMAL)
+            self.error_text.delete("1.0", tk.END)
+            self.error_text.insert("1.0", f"Erreur de compilation : {str(e)}")
+            self.error_text.config(state=tk.DISABLED)
 
     def uncompile_code(self):
         """Uncompile the binary code."""
@@ -202,7 +222,6 @@ class CompilerInterface:
             # Affiche le code décompilé dans le champ unassembler_entry
             self.assembler_entry.insert("1.0", decompiled_code)
 
-            #messagebox.showinfo("Succès", "Code décompilé avec succès !")
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la décompilation : {str(e)}")
 
@@ -227,7 +246,5 @@ class CompilerInterface:
                 code = self.assembler_entry.get("1.0", tk.END).strip() or self.unassembler_entry.get("1.0", tk.END).strip()
                 with open(file_path, "w") as file:
                     file.write(code)
-                #messagebox.showinfo("Succès", f"Code sauvegardé avec succès dans {file_path}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde du fichier : {str(e)}")
-

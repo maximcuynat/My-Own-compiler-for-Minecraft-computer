@@ -1,7 +1,7 @@
 # Instruction set table
 instruction_set = {
     "NOP": "0000",
-    "HLT": "0001",
+    "HLT": "0001",  # HLT is included here
     "ADD": "0010",
     "SUB": "0011",
     "ORR": "0100",
@@ -18,7 +18,6 @@ instruction_set = {
     "BIF": "1111",
 }
 
-
 # Class Assembler
 class Assembler:
     def __init__(self, input_file, output_file):
@@ -26,66 +25,99 @@ class Assembler:
         self.output_file = output_file
 
     # Function to convert a register to binary (R0 to R7)
-    def register_to_binary(self, register):
-        # Check if the register is valid
+    @staticmethod
+    def register_to_binary(register):
+        """Convert register to 3-bit binary representation."""
         if register.startswith("R"):
-            reg_num = int(register[1:])
-            return f"{reg_num:03b}"  # Convert to 3 bits
-        else:
-            raise ValueError(f"Invalid register: {register}")
+            try:
+                reg_num = int(register[1:])
+                if reg_num < 0 or reg_num > 7:
+                    raise ValueError(f"Invalid register '{register}'. Only registers R0 to R7 are allowed.")
+                return f"{reg_num:03b}"
+            except ValueError:
+                raise ValueError(f"Invalid register '{register}'. It should be in the format R0 to R7.")
+        raise ValueError(f"Invalid register format: {register}. It should start with 'R' followed by a number.")
 
-    # Function to compile assembly code to binary
+    def process_instruction(self, mnemonic, parts, line_no):
+        """Process each instruction based on its mnemonic."""
+        opcode = instruction_set.get(mnemonic)
+
+        if not opcode:
+            return f"Error in line {line_no}: Unknown instruction '{mnemonic}'"
+
+        try:
+            # Validate the number of operands for each instruction
+            if mnemonic == "LDI":
+                if len(parts) != 3:
+                    return f"Error in line {line_no}: LDI instruction requires 2 operands (Reg Immediate)."
+                reg = self.register_to_binary(parts[1])
+                immediate = int(parts[2])
+                return f"{opcode}{reg} {immediate:08b}"
+
+            elif mnemonic in {"JMP", "BIF"}:
+                if len(parts) != 2:
+                    return f"Error in line {line_no}: {mnemonic} instruction requires 1 operand (Address)."
+                address = int(parts[1])
+                return f"{opcode}0000 {address:08b}"
+
+            elif mnemonic in {"LOD", "STR"}:
+                if len(parts) != 2:
+                    return f"Error in line {line_no}: {mnemonic} instruction requires 1 operand (Reg)."
+                reg = self.register_to_binary(parts[1])
+                return f"{opcode}{reg} 00000000"  # No address, fill with zeros
+
+            elif mnemonic in {"HLT", "NOP"}:
+                if len(parts) != 1:
+                    return f"Error in line {line_no}: {mnemonic} instruction requires no operands."
+                return f"{opcode}000 00000000"
+
+            else:
+                if len(parts) != 4:
+                    return f"Error in line {line_no}: {mnemonic} instruction requires 3 operands (RegDest RegA RegB)."
+                reg_dest = self.register_to_binary(parts[1])
+                reg_a = self.register_to_binary(parts[2])
+                reg_b = self.register_to_binary(parts[3])
+                print(f"{opcode}{reg_dest} 0{reg_a}0{reg_b}")
+                return f"{opcode}{reg_dest} 0{reg_a}0{reg_b}"
+
+        except ValueError as e:
+            return f"Error in line {line_no}: {str(e)}"
+        except Exception as e:
+            return f"Error in line {line_no}: {str(e)}"
+
     def compile_assembly(self):
-        # Read the assembly file
+        """Compile the assembly code into binary format."""
         with open(self.input_file, "r") as asm_file:
             lines = asm_file.readlines()
 
         binary_output = []
+        has_hlt = False
 
         for line_no, line in enumerate(lines, start=1):
             line = line.strip()
-            if not line or line.startswith(";"):  # Ignore empty lines or comments
+            if not line or line.startswith(";"):
                 continue
 
             parts = line.split()
             mnemonic = parts[0]
-            if mnemonic not in instruction_set:
-                raise ValueError(f"Unknown instruction: {mnemonic}")
 
-            opcode = instruction_set[mnemonic]
+            # Process instruction and handle errors
+            result = self.process_instruction(mnemonic, parts, line_no)
+            if "Error" in result:
+                return result  # Return error message if there's an issue
 
-            # Handle different instruction formats
-            if mnemonic == "LDI":  # Format: LDI Reg Immediate
-                reg = self.register_to_binary(parts[1])
-                immediate = int(parts[2])
-                binary_line = f"{opcode}{reg}{immediate:08b}"  # Immediate on 8 bits
+            # Add the result to the binary output
+            binary_output.append(result)
 
-            elif mnemonic in {"JMP", "BIF"}:  # Format: JMP Address
-                address = int(parts[1])
-                binary_line = f"{opcode}000{address:08b}"  # Address on 8 bits
+            if mnemonic == "HLT":
+                has_hlt = True
 
-            elif mnemonic in {"LOD", "STR"}:  # Format: LOD/STR Reg
-                reg = self.register_to_binary(parts[1])
-                binary_line = f"{opcode}{reg}00000000"  # No address, fill with zeros
+        # Ensure 'HLT' is added at the end if missing
+        if not has_hlt:
+            binary_output.append(f"{instruction_set['HLT']}0000000000")
 
-            elif mnemonic in {"HLT", "NOP"}:  # Instructions without operands
-                binary_line = f"{opcode}0000000000"  # Fill with zeros
-
-            else:  # Instructions with registers: ADD, SUB, etc.
-                reg_dest = self.register_to_binary(parts[1])
-                reg_a = self.register_to_binary(parts[2])
-                reg_b = self.register_to_binary(parts[3])
-                binary_line = f"{opcode}{reg_dest}{reg_a}{reg_b}"
-
-            # Separate into two bytes, always filling to 8 bits
-            byte1 = binary_line[:8].zfill(8)  # Fill with zeros at the beginning if necessary
-            byte2 = binary_line[8:].zfill(8)  # Fill with zeros at the beginning if necessary
-
-            # Add opcode and operands separated for each instruction
-            formatted_line = f"{byte1} {byte2}"
-
-            binary_output.append(formatted_line)
-
-        # Write the text file with the formatted binary instructions
+        # Write the binary output to the file
         with open(self.output_file, "w") as txt_file:
-            txt_file.write("\n".join(binary_output))       
+            txt_file.write("\n".join(binary_output))
+
+        return "Compilation successful!"  # Return success message
