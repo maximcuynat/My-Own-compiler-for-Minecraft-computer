@@ -2,6 +2,8 @@ import tkinter as tk
 from compilator.Assembler import Assembler # Importer la classe Assembler
 from compilator.UnAssembler import UnAssembler # Importer la classe UnAssembler
 
+from tkinter import filedialog, messagebox
+
 class CompilerInterface:
     def __init__(self, root):
         self.root = root
@@ -182,17 +184,28 @@ class CompilerInterface:
         """Compile the assembler code."""
         code = self.assembler_entry.get("1.0", tk.END).strip()
         try:
-            # Crée le fichier .asm à partir du code entré
+            # Crée le fichier .asm à partir du code entré et ecris le code dans le fichier
             with open("code/input.asm", "w") as file:
                 file.write(code)
 
             # Crée l'objet Assembler et compile le code
             assembler = Assembler("code/input.asm", "compile/output.bin")
-            assembler.compile_assembly()
+            
+            result  = assembler.compile_assembly()
+            # Si result est une chaine de caractère différente "Compilation successful!" il y a une erreur
+            print(result)
+            if result != "Compilation réussie":
+                # renvoie une erreur dans l'interface
+                self.error_text.config(state=tk.NORMAL)
+            print("Compilation réussie", assembler)
 
             # Ouvrir le fichier binaire compilé et afficher le contenu binaire
             with open("compile/output.bin", "rb") as bin_file:
                 binary_code = bin_file.read()
+
+            # vider les deux champs de texte
+            # self.assembler_entry.delete("1.0", tk.END)
+            self.unassembler_entry.delete("1.0", tk.END)
 
             # Afficher le code binaire dans le champ de texte
             self.unassembler_entry.insert("1.0", binary_code)
@@ -218,6 +231,10 @@ class CompilerInterface:
 
             with open("code/decompiled.asm", "r") as file:
                 decompiled_code = file.read()
+            
+            # vider les deux champs de texte
+            self.assembler_entry.delete("1.0", tk.END)
+            self.unassembler_entry.delete("1.0", tk.END)
 
             # Affiche le code décompilé dans le champ unassembler_entry
             self.assembler_entry.insert("1.0", decompiled_code)

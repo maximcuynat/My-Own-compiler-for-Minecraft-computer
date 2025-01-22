@@ -52,24 +52,28 @@ class Assembler:
                     return f"Error in line {line_no}: LDI instruction requires 2 operands (Reg Immediate)."
                 reg = self.register_to_binary(parts[1])
                 immediate = int(parts[2])
+                print(f"LDI: {reg} {immediate:08b}")  # Debug
                 return f"{opcode}{reg} {immediate:08b}"
 
             elif mnemonic in {"JMP", "BIF"}:
                 if len(parts) != 2:
                     return f"Error in line {line_no}: {mnemonic} instruction requires 1 operand (Address)."
                 address = int(parts[1])
+                print(f"{mnemonic}: {address:08b}")  # Debug
                 return f"{opcode}0000 {address:08b}"
 
             elif mnemonic in {"LOD", "STR"}:
                 if len(parts) != 2:
                     return f"Error in line {line_no}: {mnemonic} instruction requires 1 operand (Reg)."
                 reg = self.register_to_binary(parts[1])
+                print(f"{mnemonic}: {reg}")  # Debug
                 return f"{opcode}{reg} 00000000"  # No address, fill with zeros
 
             elif mnemonic in {"HLT", "NOP"}:
                 if len(parts) != 1:
                     return f"Error in line {line_no}: {mnemonic} instruction requires no operands."
-                return f"{opcode}000 00000000"
+                print(f"{mnemonic}")  # Debug
+                return f"{opcode}000  00000000"
 
             else:
                 if len(parts) != 4:
@@ -77,11 +81,12 @@ class Assembler:
                 reg_dest = self.register_to_binary(parts[1])
                 reg_a = self.register_to_binary(parts[2])
                 reg_b = self.register_to_binary(parts[3])
-                print(f"{opcode}{reg_dest} 0{reg_a}0{reg_b}")
-                return f"{opcode}{reg_dest} 0{reg_a}0{reg_b}"
+                print(f"{mnemonic}: {reg_dest} {reg_a} {reg_b}")  # Debug
+                return f"{opcode}{reg_dest} 00{reg_a}{reg_b}"
 
         except ValueError as e:
             return f"Error in line {line_no}: {str(e)}"
+
         except Exception as e:
             return f"Error in line {line_no}: {str(e)}"
 
@@ -114,7 +119,7 @@ class Assembler:
 
         # Ensure 'HLT' is added at the end if missing
         if not has_hlt:
-            binary_output.append(f"{instruction_set['HLT']}0000000000")
+            binary_output.append(f"{instruction_set['HLT']}000 00000000")
 
         # Write the binary output to the file
         with open(self.output_file, "w") as txt_file:
