@@ -1,2 +1,2 @@
-# own asm compiler for minecraft computer
+# asm compiler for minecraft computer
  
